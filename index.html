@@ -33,6 +33,7 @@
         background: black;
         text-align: center;
         overflow: hidden;
+        position: relative;
     }
     .slide {
         display: none;
@@ -43,6 +44,7 @@
         flex-direction: column;
         justify-content: center;
         align-items: center;
+        transition: opacity 1s ease-in-out;
     }
     .slide h1 {
         font-size: 2em;
@@ -54,18 +56,14 @@
     }
     .active {
         display: flex;
-        animation: fade 1s ease-in-out;
-    }
-    @keyframes fade {
-        from {opacity: 0;}
-        to {opacity: 1;}
+        opacity: 1;
     }
 </style>
 </head>
 <body>
 
 <div id="scrisoare">
-    <p>Trage cu degetul spre dreapta sau apasă aici pentru a deschide scrisoarea ❤️</p>
+    <p>Trage sau apasă aici pentru a deschide scrisoarea ❤️</p>
 </div>
 
 <div id="slideshow">
@@ -80,6 +78,10 @@
     <div class="slide">
         <h1>Un mic secret</h1>
         <p>Îmi place să îți fac ziua mai bună 😏</p>
+    </div>
+    <div class="slide">
+        <h1>Mulțumesc că exiști</h1>
+        <p>Sper să ai o zi minunată 💖</p>
     </div>
 </div>
 
@@ -98,7 +100,9 @@ scrisoare.addEventListener("click", () => {
 function showSlide(index) {
     slides.forEach((slide, i) => {
         slide.classList.remove("active");
+        slide.style.display = "none";
     });
+    slides[index].style.display = "flex";
     slides[index].classList.add("active");
 }
 
@@ -110,4 +114,3 @@ setInterval(() => {
 
 </body>
 </html>
-
