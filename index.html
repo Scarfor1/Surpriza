@@ -1,0 +1,229 @@
+<!--
+  Surpriza - HTML single-file interactive letter (mobile-friendly)
+  How to use / customize:
+  - Open this file on phone: tap to start, then swipe the ribbon to "open" the letter.
+  - To change the name: edit the JS constant `RECIPIENT_NAME` below.
+  - To change messages: edit the `slides` array (each slide has title + body).
+  - To add background music: place a file named `music.mp3` in the same folder and toggle the music icon.
+  - To change colors: edit CSS variables in :root (--bg, --accent, etc.).
+  - This file is fully offline and uses only HTML/CSS/JS.
+-->
+
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <title>Surpriză</title>
+  <style>
+    :root{
+      --bg:#0b0b0b; /* black */
+      --accent:#c71f1f; /* red */
+      --muted:#222;
+      --card:#0f0f0f;
+      --glass: rgba(255,255,255,0.04);
+      --text:#f6f6f6;
+      --smooth: cubic-bezier(.2,.9,.3,1);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial; background: radial-gradient(1200px 600px at 10% 10%, rgba(199,31,31,0.06), transparent), var(--bg); color:var(--text); -webkit-font-smoothing:antialiased}
+
+    .app{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+    .stage{width:100%;max-width:520px;aspect-ratio:9/16;position:relative}
+
+    /* envelope */
+    .envelope{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+    .env-wrap{width:86%;max-width:420px;height:62%;position:relative}
+    .envelope-card{width:100%;height:100%;background:linear-gradient(180deg,var(--card),#131313);border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,0.6);overflow:hidden;border:1px solid rgba(255,255,255,0.03);display:flex;flex-direction:column;align-items:center;justify-content:center}
+
+    .ribbon{position:absolute;left:8%;right:8%;top:18%;height:16%;background:linear-gradient(90deg,var(--accent),#ff5b5b);border-radius:999px;box-shadow:0 6px 20px rgba(199,31,31,0.25);display:flex;align-items:center;justify-content:center;color:white;font-weight:600;touch-action:none}
+    .ribbon .slide-hint{font-size:14px;opacity:0.95}
+
+    .letter{position:absolute;left:4%;right:4%;top:14%;bottom:6%;background:linear-gradient(180deg,#0c0c0c,#0f0f0f);border-radius:12px;padding:20px;color:var(--text);transform:translateY(120%);transition:transform 450ms var(--smooth);box-shadow:0 6px 30px rgba(0,0,0,0.5)}
+    .letter.open{transform:translateY(0%)}
+
+    .letter .header{display:flex;justify-content:space-between;align-items:center}
+    .logo{display:flex;gap:10px;align-items:center}
+    .logo .heart{width:38px;height:38px;border-radius:9px;background:linear-gradient(180deg,var(--accent),#ff5b5b);display:grid;place-items:center;font-weight:700}
+    h1{margin:0;font-size:18px}
+    .close-hint{font-size:12px;opacity:0.8}
+
+    .content{margin-top:12px;overflow:hidden;height:62%;display:flex;align-items:center}
+    .slide{min-width:100%;padding:8px;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+    .slide h2{margin:0;font-size:20px;color:var(--accent)}
+    .slide p{margin:0;line-height:1.4;color:rgba(246,246,246,0.92)}
+
+    .controls{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+    .dots{display:flex;gap:6px}
+    .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.08)}
+    .dot.active{background:var(--accent);transform:scale(1.2)}
+
+    .actions{display:flex;gap:8px}
+    .btn{background:var(--glass);padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);font-size:13px}
+
+    /* confetti/inimioare */
+    .particle-layer{position:absolute;inset:0;pointer-events:none}
+
+    /* subtle footer */
+    .footer{position:absolute;left:12px;right:12px;bottom:8px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:rgba(255,255,255,0.6)}
+
+    /* responsive tweaks */
+    @media (max-width:420px){.stage{max-width:420px;aspect-ratio:9/16}.env-wrap{height:68%}.ribbon{top:14%;height:14%}}
+
+    /* small animations */
+    .pulse{animation:pulse 1.8s infinite}
+    @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.03)}100%{transform:scale(1)}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="stage" role="application" aria-label="Surpriză">
+
+      <div class="envelope">
+        <div class="env-wrap">
+          <div class="envelope-card">
+            <div class="ribbon" id="ribbon" aria-hidden="true">
+              <div class="slide-hint">TRAGE de aici ⇆</div>
+            </div>
+
+            <div class="letter" id="letter" aria-hidden="true">
+              <div class="header">
+                <div class="logo"><div class="heart">❤</div><h1 id="title">La mulți ani, [Nume]!</h1></div>
+                <div class="close-hint">Glisează sau atinge</div>
+              </div>
+
+              <div class="content" id="slidesContainer">
+                <!-- slides injected by JS -->
+              </div>
+
+              <div class="controls">
+                <div class="dots" id="dots"></div>
+                <div class="actions">
+                  <button class="btn" id="prev">◀</button>
+                  <button class="btn" id="next">▶</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="particle-layer" id="particles"></div>
+
+      <div class="footer">
+        <div>Trimis cu grijă 💌</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn" id="musicBtn">♫</button>
+          <button class="btn" id="editBtn">Edit</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <audio id="bgm" loop preload="auto">
+    <!-- Drop an mp3 file named 'music.mp3' in the same folder to enable -->
+    <source src="music.mp3" type="audio/mpeg">
+  </audio>
+
+  <script>
+    /* ====== EDITABLE PART ====== 
+       Change these values to customize the letter easily.
+    */
+    const RECIPIENT_NAME = '[Nume]'; // replace with her name
+    const slides = [
+      {title: "Hey,", body: `Nu era planificat, dar m-am gândit să-ți trimit ceva... o mică surpriză. Trebuie doar să tragi panglica și să vezi.`},
+      {title: "Momentul 1", body: `Îmi place cum râzi și cum transformi orice lucru plictisitor într-o poveste genială. M-ai inspirat să fiu mai atent.`},
+      {title: "Glumă mică", body: `Dacă viața ar fi un joc, tu ai fi acel power-up la care alerg mereu. (Nu, nu e glumă — poate puțin.)`},
+      {title: "Către tine", body: `Îți las aici un mic gând: îmi place cum ești. Nu trebuie să răspunzi imediat — doar știam să-ți spun.`},
+      {title: "Final", body: `La mulți ani! Sper să-ți placă. Dacă vrei, hai să bem o cafea când poți ☕`}
+    ];
+    /* ====== END EDITABLE PART ====== */
+
+    // minimal DOM refs
+    const ribbon = document.getElementById('ribbon');
+    const letter = document.getElementById('letter');
+    const title = document.getElementById('title');
+    const slidesContainer = document.getElementById('slidesContainer');
+    const dots = document.getElementById('dots');
+    const prevBtn = document.getElementById('prev');
+    const nextBtn = document.getElementById('next');
+    const bgm = document.getElementById('bgm');
+    const musicBtn = document.getElementById('musicBtn');
+    const editBtn = document.getElementById('editBtn');
+
+    title.textContent = `La mulți ani, ${RECIPIENT_NAME}!`;
+
+    // build slides
+    let current = 0;
+    function buildSlides(){
+      slidesContainer.innerHTML = '';
+      slides.forEach((s, i)=>{
+        const el = document.createElement('div');
+        el.className = 'slide';
+        el.innerHTML = `<h2>${s.title}</h2><p>${s.body}</p>`;
+        slidesContainer.appendChild(el);
+
+        const d = document.createElement('div');
+        d.className='dot' + (i===0? ' active':'');
+        dots.appendChild(d);
+      });
+    }
+    buildSlides();
+
+    function updateDots(){
+      Array.from(dots.children).forEach((d, i)=> d.classList.toggle('active', i===current));
+      slidesContainer.style.transform = `translateX(${-current*100}%)`;
+    }
+
+    prevBtn.addEventListener('click', ()=>{ current = Math.max(0, current-1); updateDots(); });
+    nextBtn.addEventListener('click', ()=>{ current = Math.min(slides.length-1, current+1); updateDots(); });
+
+    // ribbon drag to open
+    let dragging=false, startX=0, lastX=0;
+    function onStart(e){ dragging=true; startX = e.touches ? e.touches[0].clientX : e.clientX; }
+    function onMove(e){ if(!dragging) return; lastX = e.touches ? e.touches[0].clientX : e.clientX; const dx = lastX - startX; ribbon.style.transform = `translateX(${dx}px)`; }
+    function onEnd(e){ if(!dragging) return; dragging=false; ribbon.style.transform=''; const dx = lastX - startX; if(Math.abs(dx) > 60){ openLetter(); } }
+    ribbon.addEventListener('mousedown', onStart); ribbon.addEventListener('touchstart', onStart);
+    window.addEventListener('mousemove', onMove); window.addEventListener('touchmove', onMove);
+    window.addEventListener('mouseup', onEnd); window.addEventListener('touchend', onEnd);
+
+    function openLetter(){ letter.classList.add('open'); confettiBurst(); }
+
+    // slide via swipe on letter
+    let sdrag=false, sx=0, slCurrentX=0;
+    slidesContainer.addEventListener('touchstart', (e)=>{ sdrag=true; sx=e.touches[0].clientX; });
+    slidesContainer.addEventListener('touchmove', (e)=>{ if(!sdrag) return; const dx = e.touches[0].clientX - sx; slidesContainer.style.transform = `translateX(${-current*100 + dx/window.innerWidth*100}%)`; });
+    slidesContainer.addEventListener('touchend', (e)=>{ sdrag=false; const dx = (e.changedTouches[0].clientX - sx); if(dx < -40) { current = Math.min(slides.length-1, current+1);} else if(dx > 40){ current = Math.max(0, current-1);} updateDots(); });
+
+    // music toggle
+    musicBtn.addEventListener('click', ()=>{
+      if(bgm.paused){ bgm.play().catch(()=>alert('Adauga fisier music.mp3 in acelasi folder.')); musicBtn.textContent='🔈'; }
+      else{ bgm.pause(); musicBtn.textContent='♫'; }
+    });
+
+    // simple confetti hearts
+    function confettiBurst(){ const layer = document.getElementById('particles'); for(let i=0;i<18;i++){ const e = document.createElement('div'); e.style.position='absolute'; e.style.left = (50 + (Math.random()-0.5)*60)+'%'; e.style.top = (40 + Math.random()*10)+'%'; e.style.fontSize = (12+Math.random()*18)+'px'; e.style.opacity = 0.95; e.style.transform = `translate(-50%,-50%) rotate(${Math.random()*360}deg)`; e.textContent = '❤'; e.style.transition = 'transform 1200ms var(--smooth), opacity 1200ms linear'; layer.appendChild(e); requestAnimationFrame(()=>{ e.style.transform += ` translateY(${120 + Math.random()*140}px) translateX(${(Math.random()-0.5)*160}px) scale(1.2)`; e.style.opacity='0'; }); setTimeout(()=>e.remove(),1400); }
+    }
+
+    // edit button: quick in-browser edit for name and slides
+    editBtn.addEventListener('click', ()=>{
+      const newName = prompt('Schimbă numele (lasă gol pentru a păstra):', RECIPIENT_NAME) || RECIPIENT_NAME;
+      if(newName) title.textContent = `La mulți ani, ${newName}!`;
+      const changeSlides = confirm('Vrei să editezi textele slide-urilor?');
+      if(changeSlides){ slides.forEach((s,i)=>{ const t = prompt(`Titlu slide ${i+1}:`, s.title); const b = prompt(`Text slide ${i+1}:`, s.body); if(t) s.title = t; if(b) s.body = b; }); dots.innerHTML=''; buildSlides(); updateDots(); }
+    });
+
+    // initial: hide letter until open
+    letter.classList.remove('open');
+
+    // small accessibility: open on tap too
+    document.querySelector('.envelope-card').addEventListener('click', (e)=>{ if(!letter.classList.contains('open')) openLetter(); });
+
+    // prepare slides transform
+    slidesContainer.style.display = 'flex'; slidesContainer.style.transition = 'transform 380ms var(--smooth)';
+
+  </script>
+</body>
+</html>
